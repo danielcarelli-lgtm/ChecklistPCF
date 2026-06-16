@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="ChecklistControls" constructor="Checklist" version="1.0.9" display-name-key="Checklist Card" description-key="Tarjeta de Checklist interactiva" control-type="standard" >
+    
+    <property name="boundValue" display-name-key="Valor Numérico (Cantidad)" description-key="Campo de tipo número entero vinculado" of-type="Whole.None" usage="bound" required="true" />
+    <property name="label_boundValue" display-name-key="Label Cantidad" description-key="Texto a mostrar para la cantidad" of-type="SingleLine.Text" usage="input" required="true" default-value="Cantidad" />
+
+    <property name="val_funcionamiento" display-name-key="Funcionamiento" description-key="Valor de funcionamiento" of-type="OptionSet" usage="bound" required="true" />
+    <property name="label_funcionamiento" display-name-key="Label Funcionamiento" description-key="Texto a mostrar para Funcionamiento" of-type="SingleLine.Text" usage="input" required="true" default-value="En funcionamiento" />
+
+    <property name="val_limpieza" display-name-key="Limpieza" description-key="Valor de limpieza" of-type="OptionSet" usage="bound" required="true" />
+    <property name="label_limpieza" display-name-key="Label Limpieza" description-key="Texto a mostrar para Limpieza" of-type="SingleLine.Text" usage="input" required="true" default-value="Limpieza" />
+
+    <property name="val_status" display-name-key="Status" description-key="Valor de status" of-type="OptionSet" usage="bound" required="true" />
+    <property name="label_status" display-name-key="Label Status" description-key="Texto a mostrar para Status" of-type="SingleLine.Text" usage="input" required="true" default-value="Estatus grabación" />
+
+    <property name="val_chequeo_fecha" display-name-key="Chequeo Fecha" description-key="Valor de chequeo fecha" of-type="OptionSet" usage="bound" required="true" />
+    <property name="label_chequeo_fecha" display-name-key="Label Chequeo Fecha" description-key="Texto a mostrar para Chequeo Fecha" of-type="SingleLine.Text" usage="input" required="true" default-value="Chequeo fecha/hora" />
+
+    <property name="val_tiempo" display-name-key="Tiempo" description-key="Valor de tiempo" of-type="Multiple" usage="bound" required="true" />
+    <property name="label_tiempo" display-name-key="Label Tiempo" description-key="Texto a mostrar para Tiempo" of-type="SingleLine.Text" usage="input" required="true" default-value="Tiempo grabación" />
+
+    <property name="titulo_tarjeta" display-name-key="Título de la Tarjeta" description-key="Título principal" of-type="SingleLine.Text" usage="input" required="true" />
+
+    <resources>
+      <code path="index.ts" order="1"/>
+    </resources>
+  </control>
+</manifest>
