@@ -32,6 +32,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     private _val_status: number | null;
     private _val_chequeo_fecha: number | null;
     private _val_tiempo: string | null;
+    private _sec_estadochecklist: number | null;
 
     // Límites del campo numérico Dataverse
     private _minValue: number;
@@ -64,14 +65,14 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
 
         // Tonalidad gris de fondo al área donde se aloja el control
         this._container.style.backgroundColor = "#f8f9fa";
-        this._container.style.padding = "6px"; // Espacio aún más reducido
+        this._container.style.padding = "6px";
         this._container.style.boxSizing = "border-box";
 
         // Contenedor principal de la tarjeta
         const card = document.createElement("div");
         card.style.border = "1px solid #e0e0e0";
         card.style.borderRadius = "8px";
-        card.style.padding = "14px"; // Relleno interno muy ajustado
+        card.style.padding = "14px";
         card.style.fontFamily = "Segoe UI, Tahoma, sans-serif";
         card.style.backgroundColor = "#ffffff";
         card.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.05)";
@@ -83,7 +84,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         // Propiedades Flex
         card.style.display = "flex";
         card.style.flexWrap = "wrap";
-        card.style.gap = "8px"; // Gap muy compacto
+        card.style.gap = "8px";
         card.style.alignItems = "flex-start";
 
         // Fila de Título e Icono de Completitud
@@ -146,7 +147,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         // --- Fila Exclusiva para Funcionamiento y Limpieza (Fuerza mismo renglón) ---
         const rowFuncLimp = document.createElement("div");
         rowFuncLimp.style.display = "flex";
-        rowFuncLimp.style.width = "100%"; // Obliga a ocupar la línea entera
+        rowFuncLimp.style.width = "100%"; 
         rowFuncLimp.style.gap = "8px";
         
         this._funcionamientoContainer = document.createElement("div");
@@ -171,7 +172,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         this._statusContainer = document.createElement("div");
         this._statusContainer.style.display = "flex";
         this._statusContainer.style.flexWrap = "wrap";
-        card.appendChild(this.createFieldContainer(context.parameters.label_status.raw || "Estatus grabación", this._statusContainer, "1 1 200px"));
+        card.appendChild(this.createFieldContainer(context.parameters.label_status.raw || "Estatus BD", this._statusContainer, "1 1 200px"));
 
         // --- Campo: Tiempo ---
         this._tiempoTextarea = document.createElement("textarea");
@@ -185,11 +186,11 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         this._tiempoTextarea.style.boxSizing = "border-box";
         this._tiempoTextarea.addEventListener("change", this.onTiempoChange.bind(this));
         
-        card.appendChild(this.createFieldContainer(context.parameters.label_tiempo.raw || "Tiempo grabación", this._tiempoTextarea, "1 1 250px"));
+        card.appendChild(this.createFieldContainer(context.parameters.label_tiempo.raw || "Fecha respaldo BD", this._tiempoTextarea, "1 1 250px"));
 
         // Versionado
         this._versionElement = document.createElement("div");
-        this._versionElement.innerText = "v1.0.9";
+        this._versionElement.innerText = "v1.0.10";
         this._versionElement.style.position = "absolute";
         this._versionElement.style.bottom = "6px";
         this._versionElement.style.right = "10px";
@@ -202,6 +203,12 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     }
 
     public updateView(context: ComponentFramework.Context<IInputs>): void {
+        // Cargar el valor del estado que define si es editable
+        this._sec_estadochecklist = context.parameters.sec_estadochecklist.raw;
+        
+        // Evaluar lógica de solo lectura (Bloqueo general o Estado distinto a 909540000)
+        const isReadOnly = context.mode.isControlDisabled || this._sec_estadochecklist !== 909540000;
+
         // Generar dinámicamente los botones si no se han cargado aún
         if (!this._optionsLoaded) {
             this.renderOptionSetButtons(this._funcionamientoContainer, context.parameters.val_funcionamiento, this._funcionamientoButtons, (val) => {
@@ -247,22 +254,42 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         const fallbackMinDisplay = this._minValue !== Number.MIN_SAFE_INTEGER ? this._minValue.toString() : "0";
         this._boundValueInput.value = this._boundValue !== null ? this._boundValue.toString() : fallbackMinDisplay;
 
-        // Sincronizar Estados de Selección en los grupos de botones
-        this._val_funcionamiento = context.parameters.val_funcionamiento.raw;
-        this.updateButtonSelectionStates(this._funcionamientoButtons, this._val_funcionamiento);
+        // --- APLICAR ESTADOS DE SOLO LECTURA ---
+        
+        // Botones de Cantidad
+        this._btnMinus.disabled = isReadOnly;
+        this._btnPlus.disabled = isReadOnly;
+        this._btnMinus.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+        this._btnPlus.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+        this._btnMinus.style.opacity = isReadOnly ? "0.65" : "1";
+        this._btnPlus.style.opacity = isReadOnly ? "0.65" : "1";
+        this._btnMinus.style.backgroundColor = isReadOnly ? "#e9ecef" : "#f1f3f5";
+        this._btnPlus.style.backgroundColor = isReadOnly ? "#e9ecef" : "#f1f3f5";
 
-        this._val_limpieza = context.parameters.val_limpieza.raw;
-        this.updateButtonSelectionStates(this._limpiezaButtons, this._val_limpieza);
+        // Input de Cantidad
+        this._boundValueInput.disabled = isReadOnly;
+        this._boundValueInput.style.cursor = isReadOnly ? "not-allowed" : "text";
+        this._boundValueInput.style.backgroundColor = isReadOnly ? "#e9ecef" : "#ffffff";
 
-        this._val_status = context.parameters.val_status.raw;
-        this.updateButtonSelectionStates(this._statusButtons, this._val_status);
-
-        this._val_chequeo_fecha = context.parameters.val_chequeo_fecha.raw;
-        this.updateButtonSelectionStates(this._chequeoFechaButtons, this._val_chequeo_fecha);
-
-        // Sincronizar campo multilínea
+        // Textarea
         this._val_tiempo = context.parameters.val_tiempo.raw;
         this._tiempoTextarea.value = this._val_tiempo !== null ? this._val_tiempo : "";
+        this._tiempoTextarea.disabled = isReadOnly;
+        this._tiempoTextarea.style.cursor = isReadOnly ? "not-allowed" : "text";
+        this._tiempoTextarea.style.backgroundColor = isReadOnly ? "#e9ecef" : "#ffffff";
+
+        // Sincronizar Estados de Selección en los grupos de botones (pasando isReadOnly)
+        this._val_funcionamiento = context.parameters.val_funcionamiento.raw;
+        this.updateButtonSelectionStates(this._funcionamientoButtons, this._val_funcionamiento, isReadOnly);
+
+        this._val_limpieza = context.parameters.val_limpieza.raw;
+        this.updateButtonSelectionStates(this._limpiezaButtons, this._val_limpieza, isReadOnly);
+
+        this._val_status = context.parameters.val_status.raw;
+        this.updateButtonSelectionStates(this._statusButtons, this._val_status, isReadOnly);
+
+        this._val_chequeo_fecha = context.parameters.val_chequeo_fecha.raw;
+        this.updateButtonSelectionStates(this._chequeoFechaButtons, this._val_chequeo_fecha, isReadOnly);
 
         // Revisar si los campos están completos
         this.checkCompleteness();
@@ -275,7 +302,8 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
             val_limpieza: this._val_limpieza ?? undefined,
             val_status: this._val_status ?? undefined,
             val_chequeo_fecha: this._val_chequeo_fecha ?? undefined,
-            val_tiempo: this._val_tiempo ?? undefined
+            val_tiempo: this._val_tiempo ?? undefined,
+            sec_estadochecklist: this._sec_estadochecklist ?? undefined
         };
     }
 
@@ -284,7 +312,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         this.detachHoldListeners(this._btnPlus, this._boundStartPlus);
         this._boundValueInput.removeEventListener("change", this.onNumberChange);
         this._tiempoTextarea.removeEventListener("change", this.onTiempoChange);
-        this.stopHold(); // Limpiar timers por si la tarjeta se destruye mientras se presiona
+        this.stopHold(); 
     }
 
     // --- Lógica de Completitud Visual ---
@@ -331,14 +359,16 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     }
 
     private startMinusHold(evt: Event): void {
-        if (evt.type !== 'touchstart') evt.preventDefault(); // Evitar selección de texto en PC
+        if (this._btnMinus.disabled) return; // Bloquear si está en solo lectura
+        if (evt.type !== 'touchstart') evt.preventDefault(); 
         this.executeMinus();
         this._holdTimeout = window.setTimeout(() => {
-            this._holdInterval = window.setInterval(() => this.executeMinus(), 80); // Velocidad de repetición
-        }, 400); // Tiempo de espera antes de considerarlo "Hold"
+            this._holdInterval = window.setInterval(() => this.executeMinus(), 80); 
+        }, 400); 
     }
 
     private startPlusHold(evt: Event): void {
+        if (this._btnPlus.disabled) return; // Bloquear si está en solo lectura
         if (evt.type !== 'touchstart') evt.preventDefault();
         this.executePlus();
         this._holdTimeout = window.setTimeout(() => {
@@ -365,7 +395,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
             this.checkCompleteness();
             this._notifyOutputChanged();
         } else {
-            this.stopHold(); // Si llega al límite, frenar el loop
+            this.stopHold(); 
         }
     }
 
@@ -417,10 +447,10 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         btn.style.alignItems = "center";
         btn.style.justifyContent = "center";
         
-        // Efectos táctiles CSS (Feedback visual)
-        btn.onmousedown = () => btn.style.backgroundColor = "#e2e6ea";
-        btn.onmouseup = () => btn.style.backgroundColor = "#f1f3f5";
-        btn.onmouseleave = () => btn.style.backgroundColor = "#f1f3f5";
+        // Efectos táctiles (evitando el cambio de color si está deshabilitado)
+        btn.onmousedown = () => { if(!btn.disabled) btn.style.backgroundColor = "#e2e6ea"; };
+        btn.onmouseup = () => { if(!btn.disabled) btn.style.backgroundColor = "#f1f3f5"; };
+        btn.onmouseleave = () => { if(!btn.disabled) btn.style.backgroundColor = "#f1f3f5"; };
     }
 
     private createFieldContainer(labelTxt: string, controlElement: HTMLElement, flexBasis: string): HTMLDivElement {
@@ -432,7 +462,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         const label = document.createElement("label");
         label.innerText = labelTxt;
         label.style.fontWeight = "600";
-        label.style.marginBottom = "4px"; // Ahorrando espacio
+        label.style.marginBottom = "4px"; 
         label.style.fontSize = "13px";
         label.style.color = "#444444";
         container.appendChild(label);
@@ -457,10 +487,10 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
                 btn.innerText = opt.Label;
                 btn.setAttribute("data-value", opt.Value.toString());
                 
-                // Estilos por defecto optimizados
-                btn.style.padding = "8px 12px"; // Padding más ajustado
-                btn.style.margin = "0 4px 4px 0"; // Margen más ajustado
-                btn.style.fontSize = "13px"; // Fuente un pelo menor para encajar mejor
+                // Estilos base
+                btn.style.padding = "8px 12px";
+                btn.style.margin = "0 4px 4px 0";
+                btn.style.fontSize = "13px";
                 btn.style.border = "1px solid #ced4da";
                 btn.style.borderRadius = "6px";
                 btn.style.backgroundColor = "#ffffff";
@@ -478,20 +508,27 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         }
     }
 
-    private updateButtonSelectionStates(buttonArray: HTMLButtonElement[], currentValue: number | null): void {
+    private updateButtonSelectionStates(buttonArray: HTMLButtonElement[], currentValue: number | null, isReadOnly: boolean): void {
         buttonArray.forEach(btn => {
             const btnVal = btn.getAttribute("data-value");
+            
+            // Lógica de colores según selección
             if (currentValue !== null && btnVal === currentValue.toString()) {
                 btn.style.backgroundColor = "#005a9e"; 
                 btn.style.color = "#ffffff";
                 btn.style.borderColor = "#005a9e";
                 btn.style.fontWeight = "600";
             } else {
-                btn.style.backgroundColor = "#ffffff";
+                btn.style.backgroundColor = isReadOnly ? "#e9ecef" : "#ffffff";
                 btn.style.color = "#212529";
                 btn.style.borderColor = "#ced4da";
                 btn.style.fontWeight = "normal";
             }
+
+            // Aplicar propiedades de Solo Lectura
+            btn.disabled = isReadOnly;
+            btn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+            btn.style.opacity = isReadOnly ? "0.65" : "1";
         });
     }
 }
