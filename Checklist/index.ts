@@ -33,6 +33,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     private _val_chequeo_fecha: number | null;
     private _val_tiempo: string | null;
     private _sec_estadochecklist: number | null;
+    private _val_situacion: number | null; // Variable persistente para la situación (N/A, Completo, Incompleto)
 
     // Límites del campo numérico Dataverse
     private _minValue: number;
@@ -190,7 +191,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
 
         // Versionado
         this._versionElement = document.createElement("div");
-        this._versionElement.innerText = "v1.0.10";
+        this._versionElement.innerText = "v1.0.12";
         this._versionElement.style.position = "absolute";
         this._versionElement.style.bottom = "6px";
         this._versionElement.style.right = "10px";
@@ -303,7 +304,8 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
             val_status: this._val_status ?? undefined,
             val_chequeo_fecha: this._val_chequeo_fecha ?? undefined,
             val_tiempo: this._val_tiempo ?? undefined,
-            sec_estadochecklist: this._sec_estadochecklist ?? undefined
+            sec_estadochecklist: this._sec_estadochecklist ?? undefined,
+            val_situacion: this._val_situacion ?? undefined
         };
     }
 
@@ -315,19 +317,38 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         this.stopHold(); 
     }
 
-    // --- Lógica de Completitud Visual ---
+    // --- Lógica de Completitud (Visual + Datos) ---
     private checkCompleteness(): void {
+        this._statusIcon.innerHTML = "";
+
+        // Si la cantidad es 0 o nula, estado N/A
+        if (this._boundValue === 0 || this._boundValue === null) {
+            this._val_situacion = 909540000; // Opción Dataverse: N/A
+            
+            const iconNode = document.createTextNode("➖ ");
+            const textSpan = document.createElement("span");
+            textSpan.style.fontSize = "13px";
+            textSpan.style.fontWeight = "600";
+            textSpan.innerText = "N/A";
+            textSpan.style.color = "#6c757d"; // Gris neutro
+
+            this._statusIcon.appendChild(iconNode);
+            this._statusIcon.appendChild(textSpan);
+            return;
+        }
+
+        // Lógica tradicional si la cantidad es mayor a 0
         const isComplete = 
-            this._boundValue !== null &&
             this._val_funcionamiento !== null &&
             this._val_limpieza !== null &&
             this._val_status !== null &&
             this._val_chequeo_fecha !== null &&
             this._val_tiempo !== null && 
             this._val_tiempo.trim() !== "";
-
-        this._statusIcon.innerHTML = "";
         
+        // Asignación de opciones Dataverse según estado
+        this._val_situacion = isComplete ? 909540002 : 909540001; // Completo (909...02) : Incompleto (909...01)
+
         const iconNode = document.createTextNode(isComplete ? "✅ " : "⏳ ");
         const textSpan = document.createElement("span");
         textSpan.style.fontSize = "13px";
@@ -359,7 +380,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     }
 
     private startMinusHold(evt: Event): void {
-        if (this._btnMinus.disabled) return; // Bloquear si está en solo lectura
+        if (this._btnMinus.disabled) return; 
         if (evt.type !== 'touchstart') evt.preventDefault(); 
         this.executeMinus();
         this._holdTimeout = window.setTimeout(() => {
@@ -368,7 +389,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
     }
 
     private startPlusHold(evt: Event): void {
-        if (this._btnPlus.disabled) return; // Bloquear si está en solo lectura
+        if (this._btnPlus.disabled) return; 
         if (evt.type !== 'touchstart') evt.preventDefault();
         this.executePlus();
         this._holdTimeout = window.setTimeout(() => {
@@ -447,7 +468,7 @@ export class Checklist implements ComponentFramework.StandardControl<IInputs, IO
         btn.style.alignItems = "center";
         btn.style.justifyContent = "center";
         
-        // Efectos táctiles (evitando el cambio de color si está deshabilitado)
+        // Efectos táctiles
         btn.onmousedown = () => { if(!btn.disabled) btn.style.backgroundColor = "#e2e6ea"; };
         btn.onmouseup = () => { if(!btn.disabled) btn.style.backgroundColor = "#f1f3f5"; };
         btn.onmouseleave = () => { if(!btn.disabled) btn.style.backgroundColor = "#f1f3f5"; };
